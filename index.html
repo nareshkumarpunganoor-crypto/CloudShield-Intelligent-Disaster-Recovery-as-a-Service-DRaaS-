@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101c31">
+  <title>CloudShield – Intelligent Disaster Recovery as a Service (DRaaS)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --navy: #101c31;
+      --navy-light: #192942;
+      --ink: #18263b;
+      --muted: #748198;
+      --line: #e8edf3;
+      --surface: #ffffff;
+      --background: #f5f7fa;
+      --teal: #10b79e;
+      --teal-dark: #079b85;
+      --teal-soft: #e7f8f4;
+      --blue: #537af4;
+      --blue-soft: #edf2ff;
+      --amber: #e9a23b;
+      --amber-soft: #fff5e5;
+      --red: #df6570;
+      --shadow: 0 8px 32px rgba(24, 38, 59, .035);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    svg { flex-shrink: 0; }
+    .icon { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .icon.sm { width: 16px; height: 16px; }
+    .icon.lg { width: 23px; height: 23px; }
+
+    .app { min-height: 100vh; display: flex; }
+    .sidebar {
+      position: fixed; inset: 0 auto 0 0; z-index: 30;
+      width: 244px; display: flex; flex-direction: column;
+      background: var(--navy); color: #a7b5c8;
+      transition: transform .25s ease;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      padding: 31px 25px 29px; text-decoration: none; color: #fff;
+    }
+    .brand-mark {
+      width: 40px; height: 40px; display: grid; place-items: center;
+      border-radius: 12px; color: #fff;
+      background: linear-gradient(145deg, #3cdbc2, #0a9eaa);
+      box-shadow: 0 7px 20px rgba(17, 183, 158, .25);
+    }
+    .brand-mark .icon { width: 25px; height: 25px; stroke-width: 2.1; }
+    .brand-name { font-family: Manrope, sans-serif; font-size: 18px; font-weight: 800; letter-spacing: -.7px; line-height: 1.1; }
+    .brand-name span { color: #50d9c3; }
+    .brand-sub { display: block; margin-top: 5px; color: #8497ae; font-size: 10px; font-weight: 600; letter-spacing: .75px; text-transform: uppercase; }
+
+    .nav-group { padding: 8px 13px; }
+    .nav-label { padding: 16px 15px 12px; color: #667992; font-size: 10px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; }
+    .nav-link {
+      width: 100%; border: 0; background: transparent; color: #a4b2c6;
+      display: flex; align-items: center; gap: 13px;
+      padding: 12px 14px; border-radius: 9px; margin: 2px 0;
+      text-align: left; font-weight: 600; transition: .2s;
+    }
+    .nav-link:hover { background: #1c2e49; color: white; }
+    .nav-link.active { background: #243952; color: #fff; }
+    .nav-link.active .icon { color: #55d8c3; }
+    .nav-link .count { margin-left: auto; padding: 2px 7px; border-radius: 5px; background: #34445b; color: #c9d5e3; font-size: 11px; }
+    .sidebar-bottom { margin-top: auto; padding: 15px 13px 22px; }
+    .help-card { margin: 15px 8px 15px; padding: 16px; border: 1px solid #30445b; background: #1a2b43; border-radius: 12px; }
+    .help-card .help-icon { color: #58dac7; margin-bottom: 10px; }
+    .help-card strong { display: block; color: #fff; font-size: 13px; }
+    .help-card p { color: #9aabc0; font-size: 11px; line-height: 1.55; margin: 6px 0 12px; }
+    .help-card button { background: none; border: 0; padding: 0; color: #5cdbc8; font-weight: 700; font-size: 11px; }
+    .side-profile { display: flex; align-items: center; gap: 10px; border-top: 1px solid #2b3b50; padding: 19px 12px 0; }
+    .avatar { height: 35px; width: 35px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: #dcd9fa; color: #5551a6; font-weight: 800; font-size: 12px; }
+    .side-profile strong { display: block; color: #e5ebf3; font-size: 12px; }
+    .side-profile span { display: block; color: #8091a8; font-size: 10px; margin-top: 3px; }
+
+    .main { margin-left: 244px; width: calc(100% - 244px); min-width: 0; }
+    .topbar {
+      height: 76px; background: #fff; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between; gap: 18px;
+      padding: 0 37px; position: sticky; top: 0; z-index: 20;
+    }
+    .breadcrumbs { color: #96a2b3; font-size: 12px; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+    .breadcrumbs strong { color: #334158; font-weight: 700; }
+    .top-actions { display: flex; align-items: center; gap: 18px; }
+    .search-wrap { width: 225px; height: 36px; position: relative; display: flex; align-items: center; color: #99a5b5; }
+    .search-wrap .icon { position: absolute; left: 11px; width: 16px; height: 16px; }
+    .search-wrap input { width: 100%; height: 100%; border: 1px solid #e9edf2; border-radius: 7px; background: #f8fafc; padding: 0 11px 0 35px; outline: none; color: var(--ink); font-size: 12px; }
+    .search-wrap input:focus { border-color: #8fdaca; background: white; box-shadow: 0 0 0 3px #e8f9f5; }
+    .top-icon { border: 0; background: transparent; color: #65738a; width: 32px; height: 32px; display: grid; place-items: center; position: relative; border-radius: 7px; }
+    .top-icon:hover { background: #f0f4f7; }
+    .notification-dot { width: 6px; height: 6px; border-radius: 50%; background: #fa816f; position: absolute; right: 5px; top: 4px; border: 1px solid #fff; }
+    .top-avatar { width: 32px; height: 32px; }
+    .mobile-toggle { display: none; }
+
+    .content { padding: 33px 37px 50px; max-width: 1590px; margin: 0 auto; }
+    .page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 25px; }
+    .eyebrow { color: #0aab94; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2, h3 { font-family: Manrope, sans-serif; }
+    h1 { font-size: clamp(23px, 2.3vw, 29px); line-height: 1.3; letter-spacing: -1.15px; margin-bottom: 6px; }
+    .page-heading p { color: var(--muted); font-size: 12.5px; margin: 0; }
+    .heading-actions { display: flex; gap: 9px; flex-shrink: 0; padding-top: 12px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 37px; padding: 0 14px; border-radius: 7px; border: 1px solid transparent;
+      font-size: 11px; font-weight: 800; white-space: nowrap; transition: .2s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn .icon { width: 15px; height: 15px; }
+    .btn-primary { background: #0eaa96; color: #fff; box-shadow: 0 4px 10px rgba(14, 170, 150, .17); }
+    .btn-primary:hover { background: #098e7f; }
+    .btn-secondary { border-color: #e4eaf0; background: white; color: #46556c; }
+    .btn-secondary:hover { border-color: #a8dacf; color: #078c7d; }
+
+    .banner {
+      min-height: 100px; border-radius: 11px; padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      color: #fff; margin-bottom: 20px; overflow: hidden; position: relative;
+      background: linear-gradient(105deg, #112b40 0%, #134b55 65%, #126563 100%);
+    }
+    .banner::after { content: ''; position: absolute; width: 230px; height: 230px; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; right: 80px; top: -135px; box-shadow: 0 0 0 35px rgba(255,255,255,.035), 0 0 0 77px rgba(255,255,255,.025); pointer-events: none; }
+    .banner-copy { display: flex; align-items: center; gap: 17px; position: relative; z-index: 1; }
+    .banner-icon { width: 49px; height: 49px; display: grid; place-items: center; border-radius: 11px; color: #8ef0db; background: rgba(97, 221, 194, .14); border: 1px solid rgba(131, 242, 216, .19); }
+    .banner h2 { font-size: 16px; margin: 0 0 5px; letter-spacing: -.35px; }
+    .banner p { color: #afd0d0; font-size: 11.5px; margin: 0; line-height: 1.55; }
+    .banner p b { color: #83ebd6; }
+    .banner button { position: relative; z-index: 1; border: 1px solid #6cd8c4; background: #63d7c1; border-radius: 7px; color: #103b3f; padding: 10px 14px; font-weight: 800; font-size: 11px; white-space: nowrap; }
+    .banner button:hover { background: #a1f2e1; }
+
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .card { background: var(--surface); border: 1px solid #e9edf2; border-radius: 11px; box-shadow: var(--shadow); }
+    .stat-card { min-height: 139px; padding: 20px; }
+    .stat-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .stat-title { color: #728096; font-size: 11px; font-weight: 700; }
+    .stat-icon { width: 33px; height: 33px; display: grid; place-items: center; border-radius: 8px; }
+    .stat-icon.teal { color: #0aa68f; background: #e7f8f4; }
+    .stat-icon.blue { color: #537af4; background: #eef2ff; }
+    .stat-icon.purple { color: #8665d7; background: #f2effc; }
+    .stat-icon.orange { color: #e7a146; background: #fff4e7; }
+    .stat-icon .icon { width: 18px; height: 18px; }
+    .stat-value { font-family: Manrope, sans-serif; font-size: 27px; font-weight: 800; letter-spacing: -1px; line-height: 1; margin-top: 9px; }
+    .stat-foot { display: flex; align-items: center; gap: 5px; color: #8a97aa; font-size: 10.5px; margin-top: 13px; white-space: nowrap; }
+    .positive { color: #0eaa8f; font-weight: 800; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); display: inline-block; }
+
+    .middle-grid { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(280px, 1fr); gap: 17px; margin-bottom: 20px; }
+    .chart-card, .readiness-card, .table-card, .activity-card { padding: 21px 22px; }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 21px; }
+    .card-header h2 { font-size: 14px; letter-spacing: -.3px; margin: 0 0 4px; }
+    .card-header p { color: #98a4b4; font-size: 10.5px; margin: 0; }
+    .select {
+      border: 1px solid #e9edf2; background: white; color: #56657a;
+      border-radius: 6px; padding: 7px 25px 7px 10px; font-size: 10.5px; font-weight: 700; outline: none;
+    }
+    .chart-wrap { position: relative; height: 177px; padding: 4px 0 0 32px; }
+    .chart-y { position: absolute; left: 0; top: 1px; bottom: 21px; display: flex; flex-direction: column; justify-content: space-between; color: #a0acba; font-size: 9px; }
+    .chart-main { height: 151px; position: relative; }
+    .chart-grid { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; }
+    .chart-grid span { border-top: 1px dashed #e7ecf1; width: 100%; }
+    .chart-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .chart-x { display: flex; justify-content: space-between; color: #9aa6b6; font-size: 9px; padding-top: 10px; }
+    .chart-legend { display: flex; justify-content: center; gap: 20px; margin-top: 11px; font-size: 10px; color: #78869b; font-weight: 600; }
+    .legend-dot { display: inline-block; height: 7px; width: 7px; border-radius: 50%; margin-right: 6px; }
+    .readiness-card .card-header { margin-bottom: 9px; }
+    .readiness-body { display: flex; align-items: center; gap: 20px; min-height: 154px; }
+    .donut { width: 132px; height: 132px; flex-shrink: 0; position: relative; display: grid; place-items: center; }
+    .donut svg { transform: rotate(-90deg); width: 132px; height: 132px; }
+    .donut-center { position: absolute; text-align: center; }
+    .donut-center strong { display: block; font: 800 26px Manrope, sans-serif; letter-spacing: -1px; }
+    .donut-center span { color: #9aa6b5; font-size: 9px; }
+    .readiness-list { flex: 1; min-width: 0; }
+    .readiness-item { display: flex; align-items: center; justify-content: space-between; gap: 5px; padding: 9px 0; border-bottom: 1px solid #edf0f4; font-size: 10px; }
+    .readiness-item:last-child { border-bottom: 0; }
+    .readiness-item span { color: #75839a; display: flex; align-items: center; gap: 7px; }
+    .readiness-item strong { font-weight: 800; white-space: nowrap; }
+    .tiny-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .readiness-note { display: flex; align-items: center; gap: 7px; background: #f0faf7; border-radius: 6px; padding: 9px 11px; color: #188d78; font-size: 10px; font-weight: 700; line-height: 1.4; }
+
+    .bottom-grid { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(280px, 1fr); gap: 17px; }
+    .table-card .card-header, .activity-card .card-header { margin-bottom: 16px; }
+    .text-link { background: transparent; border: 0; color: #0ca68e; font-size: 10.5px; font-weight: 800; padding: 3px 0; white-space: nowrap; }
+    .text-link:hover { text-decoration: underline; }
+    .table-scroll { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; text-align: left; white-space: nowrap; }
+    th { background: #f8fafc; color: #98a4b4; text-transform: uppercase; letter-spacing: .6px; font-size: 9px; font-weight: 800; padding: 10px 9px; }
+    th:first-child { border-radius: 5px 0 0 5px; }
+    th:last-child { border-radius: 0 5px 5px 0; }
+    td { border-bottom: 1px solid #edf0f4; padding: 14px 9px; color: #6f7d91; font-size: 10.5px; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #fafcfb; }
+    td strong { color: #334158; font-weight: 800; }
+    .plan-cell { display: flex; align-items: center; gap: 9px; }
+    .plan-icon { width: 28px; height: 28px; border-radius: 6px; background: #eaf8f5; color: #14a992; display: grid; place-items: center; }
+    .plan-icon .icon { width: 15px; height: 15px; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 5px; padding: 5px 7px; font-size: 9px; font-weight: 800; }
+    .badge.green { background: #e9f8f2; color: #11a175; }
+    .badge.amber { background: #fff4e4; color: #d18b26; }
+    .badge.blue { background: #edf2ff; color: #5778e2; }
+    .row-action { background: none; border: 0; padding: 4px; color: #8794a7; border-radius: 5px; }
+    .row-action:hover { color: #0aaa94; background: #e9f8f4; }
+    .activity-list { display: flex; flex-direction: column; }
+    .activity-entry { display: flex; gap: 11px; position: relative; padding-bottom: 17px; }
+    .activity-entry:not(:last-child)::before { content: ''; position: absolute; width: 1px; background: #e6ebf0; left: 14px; top: 29px; bottom: 1px; }
+    .activity-entry:last-child { padding-bottom: 0; }
+    .activity-icon { width: 29px; height: 29px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; }
+    .activity-icon .icon { width: 14px; height: 14px; }
+    .activity-icon.green { color: #13a58e; background: #e9f8f4; }
+    .activity-icon.blue { color: #6380e7; background: #edf2ff; }
+    .activity-icon.orange { color: #db9a39; background: #fff5e8; }
+    .activity-text { padding-top: 1px; min-width: 0; }
+    .activity-text strong { color: #344258; display: block; font-size: 10.5px; margin-bottom: 3px; line-height: 1.4; }
+    .activity-text span { display: block; color: #97a4b3; font-size: 10px; line-height: 1.4; }
+
+    .subview { display: none; }
+    .subview.active, #overview.active { display: block; }
+    #overview { display: none; }
+    .view-card { padding: 24px; }
+    .view-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 20px; }
+    .view-toolbar h2 { font-size: 16px; margin: 0; }
+    .view-toolbar p { color: var(--muted); font-size: 11px; margin: 5px 0 0; }
+    .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 18px; }
+    .detail-tile { padding: 20px; }
+    .detail-tile .stat-value { font-size: 23px; }
+    .detail-tile p { color: var(--muted); font-size: 11px; margin: 8px 0 0; }
+    .info-list { display: grid; gap: 11px; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 15px; border: 1px solid var(--line); border-radius: 8px; }
+    .info-row strong { font-size: 12px; }
+    .info-row small { display: block; color: var(--muted); font-size: 10px; margin-top: 5px; }
+    .info-row .icon { color: #10ad98; }
+    .info-row-left { display: flex; align-items: center; gap: 12px; }
+    .switch { width: 36px; height: 21px; border: 0; border-radius: 20px; background: #c7d0dd; padding: 3px; transition: background .2s; }
+    .switch:before { content: ''; display: block; width: 15px; height: 15px; background: #fff; border-radius: 50%; transition: transform .2s; }
+    .switch.on { background: #12ac98; }
+    .switch.on:before { transform: translateX(15px); }
+    .empty-state { padding: 28px; color: var(--muted); text-align: center; font-size: 12px; }
+
+    .popover { position: fixed; top: 65px; right: 70px; z-index: 35; background: white; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 18px 50px rgba(18, 36, 58, .16); width: 285px; padding: 17px; display: none; }
+    .popover.open { display: block; }
+    .popover h3 { margin: 0 0 13px; font-size: 13px; }
+    .popover p { padding: 9px 0; border-top: 1px solid var(--line); color: #67768c; font-size: 11px; line-height: 1.5; margin: 0; }
+    .popover p b { color: var(--ink); display: block; }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(13, 27, 45, .55); backdrop-filter: blur(3px); }
+    .modal-backdrop.open { display: flex; }
+    .modal { width: min(100%, 465px); background: white; border-radius: 14px; padding: 25px; box-shadow: 0 25px 80px rgba(0,0,0,.2); animation: rise .22s ease; }
+    @keyframes rise { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .modal-head h2 { font-size: 18px; margin: 0 0 5px; }
+    .modal-head p { color: var(--muted); font-size: 11px; margin: 0; }
+    .close-btn { border: 0; background: #f4f6f9; color: #66758b; width: 27px; height: 27px; display: grid; place-items: center; border-radius: 6px; }
+    .field { margin-bottom: 15px; }
+    .field label { display: block; margin-bottom: 7px; color: #45546a; font-size: 11px; font-weight: 800; }
+    .field input, .field select { width: 100%; height: 39px; border: 1px solid #dde5ec; border-radius: 7px; padding: 0 11px; outline: 0; background: white; color: var(--ink); font-size: 12px; }
+    .field input:focus, .field select:focus { border-color: var(--teal); box-shadow: 0 0 0 3px #e6f8f4; }
+    .form-two { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+    .detail-line { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--line); color: #78869a; font-size: 12px; }
+    .detail-line strong { color: var(--ink); }
+    .toast { position: fixed; right: 24px; bottom: 24px; z-index: 70; background: #142d34; color: white; display: flex; align-items: center; gap: 10px; padding: 13px 17px; border-radius: 9px; box-shadow: 0 14px 40px #142d3440; font-size: 12px; opacity: 0; transform: translateY(15px); pointer-events: none; transition: .25s; max-width: calc(100vw - 32px); }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast .icon { color: #5ce1c8; }
+
+    @media (max-width: 1180px) {
+      .sidebar { width: 215px; }
+      .main { margin-left: 215px; width: calc(100% - 215px); }
+      .content { padding: 28px 25px 40px; }
+      .topbar { padding: 0 25px; }
+      .stats { gap: 10px; }
+      .stat-card { padding: 16px; }
+      .middle-grid, .bottom-grid { grid-template-columns: minmax(0, 1.55fr) minmax(260px, 1fr); gap: 12px; }
+      .chart-card, .readiness-card, .table-card, .activity-card { padding: 18px; }
+      .readiness-body { gap: 8px; }
+      .donut, .donut svg { width: 112px; height: 112px; }
+    }
+    @media (max-width: 940px) {
+      .sidebar { transform: translateX(-100%); width: 244px; }
+      .sidebar.open { transform: translateX(0); box-shadow: 10px 0 40px #101c3140; }
+      .main { margin-left: 0; width: 100%; }
+      .mobile-toggle { display: grid; }
+      .breadcrumbs { margin-right: auto; }
+      .topbar { gap: 8px; }
+      .top-actions { gap: 9px; }
+      .mobile-overlay { display: none; position: fixed; inset: 0; z-index: 25; background: #0a1b2c77; }
+      .mobile-overlay.open { display: block; }
+    }
+    @media (max-width: 700px) {
+      .topbar { height: 64px; padding: 0 17px; }
+      .top-actions { gap: 5px; }
+      .search-wrap { width: 36px; }
+      .search-wrap input { width: 36px; padding: 0 0 0 35px; transition: width .2s; }
+      .search-wrap input:focus { position: absolute; right: 0; width: min(260px, calc(100vw - 115px)); z-index: 2; padding-right: 10px; }
+      .search-wrap .icon { z-index: 3; }
+      .content { padding: 24px 16px 36px; }
+      .page-heading { flex-direction: column; gap: 10px; }
+      .heading-actions { padding: 0; width: 100%; }
+      .heading-actions .btn { flex: 1; }
+      .banner { padding: 17px; align-items: flex-start; flex-direction: column; }
+      .banner h2 { font-size: 14px; }
+      .banner button { margin-left: 66px; }
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .middle-grid, .bottom-grid { grid-template-columns: 1fr; }
+      .readiness-body { gap: 20px; }
+      .donut, .donut svg { width: 132px; height: 132px; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .popover { top: 57px; right: 15px; }
+    }
+    @media (max-width: 390px) {
+      .breadcrumbs { font-size: 11px; }
+      .top-actions { gap: 0; }
+      .stat-card { padding: 13px; min-height: 125px; }
+      .stat-value { font-size: 23px; }
+      .stat-foot { font-size: 9px; }
+      .banner-copy { gap: 10px; }
+      .banner-icon { width: 42px; height: 42px; }
+      .banner button { margin-left: 52px; }
+      .readiness-body { gap: 8px; }
+      .donut, .donut svg { width: 110px; height: 110px; }
+    }
+  </style>
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M20 17a4 4 0 0 0-.7-7.9A7.5 7.5 0 0 0 5 10a4 4 0 0 0 0 8h14"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 16l4-5 3 2 5-7"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2 2-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.56V21h-2.8v-.1a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2-2 .06-.06A1.7 1.7 0 0 0 7.52 15a1.7 1.7 0 0 0-1.56-1H5v-2.8h.96a1.7 1.7 0 0 0 1.56-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06 2-2 .06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-1.56V4h2.8v.1a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2 2-.06.06A1.7 1.7 0 0 0 19.4 10.2a1.7 1.7 0 0 0 1.56 1H21v2.8h-.04a1.7 1.7 0 0 0-1.56 1Z" transform="translate(-.5 -.5)"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4.3 1.7c-1.3 1.1-1.8 1.5-1.8 3M12 17h.01"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="7"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01M11 6.5h6M11 17.5h6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  </svg>
+
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#" data-view="overview" aria-label="CloudShield home">
+        <span class="brand-mark"><svg class="icon"><use href="#i-shield"/></svg></span>
+        <span><span class="brand-name">Cloud<span>Shield</span></span><span class="brand-sub">Disaster Recovery</span></span>
+      </a>
+      <nav aria-label="Main navigation">
+        <div class="nav-group">
+          <div class="nav-label">Workspace</div>
+          <button class="nav-link active" data-view="overview"><svg class="icon"><use href="#i-grid"/></svg> Overview</button>
+          <button class="nav-link" data-view="plans"><svg class="icon"><use href="#i-layers"/></svg> Recovery Plans <span class="count" id="navPlanCount">12</span></button>
+          <button class="nav-link" data-view="backups"><svg class="icon"><use href="#i-cloud"/></svg> Backups</button>
+          <button class="nav-link" data-view="testing"><svg class="icon"><use href="#i-rotate"/></svg> Failover Testing</button>
+          <button class="nav-link" data-view="reports"><svg class="icon"><use href="#i-chart"/></svg> Reports</button>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">Management</div>
+          <button class="nav-link" data-view="settings"><svg class="icon"><use href="#i-settings"/></svg> Settings</button>
+        </div>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="help-card">
+          <svg class="icon help-icon"><use href="#i-help"/></svg>
+          <strong>Need a hand?</strong>
+          <p>Explore our guides to get the most out of your disaster recovery setup.</p>
+          <button id="helpButton">Visit help center →</button>
+        </div>
+        <div class="side-profile">
+          <div class="avatar">AM</div>
+          <div><strong>Alex Morgan</strong><span>Workspace Admin</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="top-icon mobile-toggle" id="menuButton" aria-label="Open menu"><svg class="icon"><use href="#i-menu"/></svg></button>
+        <div class="breadcrumbs">Workspace <span>/</span> <strong id="breadcrumb">Overview</strong></div>
+        <div class="top-actions">
+          <div class="search-wrap">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input id="globalSearch" type="search" placeholder="Search recovery plans..." aria-label="Search recovery plans">
+          </div>
+          <button class="top-icon" id="notificationsButton" aria-label="Notifications" aria-expanded="false"><svg class="icon"><use href="#i-bell"/></svg><span class="notification-dot"></span></button>
+          <div class="avatar top-avatar" aria-label="Alex Morgan">AM</div>
+        </div>
+      </header>
+
+      <div class="popover" id="notificationsPopover">
+        <h3>Notifications</h3>
+        <p><b>All systems protected</b>Your infrastructure is operating normally.</p>
+        <p><b>Backup completed</b>Production Database was backed up successfully.</p>
+        <p><b>Scheduled test</b>Next failover test is scheduled for tomorrow.</p>
+      </div>
+
+      <div class="content">
+        <div class="page-heading">
+          <div>
+            <div class="eyebrow">Your protection at a glance</div>
+            <h1 id="pageTitle">Good morning, Alex 👋</h1>
+            <p id="pageSubtitle">Here's what's happening with your disaster recovery today.</p>
+          </div>
+          <div class="heading-actions">
+            <button class="btn btn-secondary" id="runBackupButton"><svg class="icon"><use href="#i-rotate"/></svg> Run Backup</button>
+            <button class="btn btn-primary" id="newPlanButton"><svg class="icon"><use href="#i-plus"/></svg> New Recovery Plan</button>
+          </div>
+        </div>
+
+        <section id="overview" class="active" aria-label="Overview dashboard">
+          <div class="banner">
+            <div class="banner-copy">
+              <span class="banner-icon"><svg class="icon lg"><use href="#i-shield"/></svg></span>
+              <div><h2>Your business is protected and ready.</h2><p>All critical systems are secure. Your recovery readiness is <b>excellent</b> across all regions.</p></div>
+            </div>
+            <button id="bannerTestButton">Run a failover test →</button>
+          </div>
+
+          <div class="stats">
+            <div class="card stat-card">
+              <div class="stat-top"><span class="stat-title">Protected Workloads</span><span class="stat-icon teal"><svg class="icon"><use href="#i-server"/></svg></span></div>
+              <div class="stat-value">48</div>
+              <div class="stat-foot"><span class="positive">↗ 12%</span> from last month</div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-top"><span class="stat-title">Recovery Plans</span><span class="stat-icon blue"><svg class="icon"><use href="#i-layers"/></svg></span></div>
+              <div class="stat-value" id="planCount">12</div>
+              <div class="stat-foot"><span class="status-dot"></span> <span id="activePlanCount">10</span> active plans</div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-top"><span class="stat-title">Backup Success Rate</span><span class="stat-icon purple"><svg class="icon"><use href="#i-cloud"/></svg></span></div>
+              <div class="stat-value">99.8<span style="font-size:16px">%</span></div>
+              <div class="stat-foot"><span class="positive">↗ 0.3%</span> from last month</div>
+            </div>
+            <div class="card stat-card">
+              <div class="stat-top"><span class="stat-title">Avg. Recovery Time</span><span class="stat-icon orange"><svg class="icon"><use href="#i-clock"/></svg></span></div>
+              <div class="stat-value">18<span style="font-size:16px"> min</span></div>
+              <div class="stat-foot"><span class="positive">↘ 4 min</span> faster than last month</div>
+            </div>
+          </div>
+
+          <div class="middle-grid">
+            <div class="card chart-card">
+              <div class="card-header">
+                <div><h2>Backup Performance</h2><p>Successful backups and recovery points over time</p></div>
+                <select class="select" id="chartPeriod" aria-label="Chart time period"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option></select>
+              </div>
+              <div class="chart-wrap">
+                <div class="chart-y"><span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span></div>
+                <div class="chart-main">
+                  <div class="chart-grid"><span></span><span></span><span></span><span></span><span></span></div>
+                  <svg class="chart-svg" viewBox="0 0 600 150" preserveAspectRatio="none" aria-label="Backup performance chart">
+                    <defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#17bea4" stop-opacity=".20"/><stop offset="100%" stop-color="#17bea4" stop-opacity="0"/></linearGradient></defs>
+                    <path id="areaPath" fill="url(#chartFill)"></path>
+                    <path id="secondaryPath" fill="none" stroke="#8da9f6" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 5" vector-effect="non-scaling-stroke"></path>
+                    <path id="primaryPath" fill="none" stroke="#17b99e" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+                  </svg>
+                </div>
+                <div class="chart-x" id="chartLabels"></div>
+              </div>
+              <div class="chart-legend"><span><i class="legend-dot" style="background:#17b99e"></i>Successful backups</span><span><i class="legend-dot" style="background:#8da9f6"></i>Recovery points</span></div>
+            </div>
+
+            <div class="card readiness-card">
+              <div class="card-header"><div><h2>Recovery Readiness</h2><p>Your overall protection health</p></div><svg class="icon sm" style="color:#a4afbd"><use href="#i-more"/></svg></div>
+              <div class="readiness-body">
+                <div class="donut">
+                  <svg viewBox="0 0 132 132" aria-label="94 percent recovery readiness"><circle cx="66" cy="66" r="51" fill="none" stroke="#edf3f3" stroke-width="11"/><circle cx="66" cy="66" r="51" fill="none" stroke="#16b89d" stroke-width="11" stroke-linecap="round" stroke-dasharray="301 320.44"/></svg>
+                  <div class="donut-center"><strong>94%</strong><span>Excellent</span></div>
+                </div>
+                <div class="readiness-list">
+                  <div class="readiness-item"><span><i class="tiny-dot" style="background:#14b99e"></i> Protected</span><strong>48</strong></div>
+                  <div class="readiness-item"><span><i class="tiny-dot" style="background:#8b9cf1"></i> Tested</span><strong>42</strong></div>
+                  <div class="readiness-item"><span><i class="tiny-dot" style="background:#efb55f"></i> Needs attention</span><strong>3</strong></div>
+                </div>
+              </div>
+              <div class="readiness-note"><svg class="icon sm"><use href="#i-check"/></svg> You're well prepared for the unexpected.</div>
+            </div>
+          </div>
+
+          <div class="bottom-grid">
+            <div class="card table-card">
+              <div class="card-header"><div><h2>Recovery Plans</h2><p>Manage your critical workload protection</p></div><button class="text-link" data-view="plans">View all plans →</button></div>
+              <div class="table-scroll">
+                <table><thead><tr><th>Plan name</th><th>Region</th><th>Last backup</th><th>Status</th><th></th></tr></thead><tbody id="overviewPlanRows"></tbody></table>
+              </div>
+            </div>
+            <div class="card activity-card">
+              <div class="card-header"><div><h2>Recent Activity</h2><p>Latest events across your workspace</p></div><button class="text-link" data-view="reports">View all →</button></div>
+              <div class="activity-list" id="activityList"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="plans" class="subview" aria-label="Recovery plans">
+          <div class="card view-card">
+            <div class="view-toolbar"><div><h2>All recovery plans</h2><p>Monitor and manage your protected applications and data.</p></div><button class="btn btn-primary" data-action="create"><svg class="icon"><use href="#i-plus"/></svg> Create plan</button></div>
+            <div class="table-scroll"><table><thead><tr><th>Plan name</th><th>Region</th><th>Last backup</th><th>RPO / RTO</th><th>Status</th><th></th></tr></thead><tbody id="allPlanRows"></tbody></table></div>
+          </div>
+        </section>
+
+        <section id="backups" class="subview" aria-label="Backups">
+          <div class="detail-grid">
+            <div class="card detail-tile"><span class="stat-title">Last successful backup</span><div class="stat-value" id="lastBackupDisplay">8 min ago</div><p>All scheduled jobs completed</p></div>
+            <div class="card detail-tile"><span class="stat-title">Backup success rate</span><div class="stat-value">99.8%</div><p>Across the last 30 days</p></div>
+            <div class="card detail-tile"><span class="stat-title">Protected data</span><div class="stat-value">12.4 TB</div><p>Encrypted and replicated</p></div>
+          </div>
+          <div class="card view-card">
+            <div class="view-toolbar"><div><h2>Backup jobs</h2><p>Recent and scheduled backup operations.</p></div><button class="btn btn-primary" data-action="backup"><svg class="icon"><use href="#i-rotate"/></svg> Run backup now</button></div>
+            <div class="info-list" id="backupJobs">
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-cloud"/></svg><div><strong>Production Database</strong><small>Completed 8 minutes ago · 840 GB</small></div></div><span class="badge green">Successful</span></div>
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-cloud"/></svg><div><strong>Customer Portal</strong><small>Completed 24 minutes ago · 156 GB</small></div></div><span class="badge green">Successful</span></div>
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-cloud"/></svg><div><strong>Analytics Platform</strong><small>Completed 1 hour ago · 1.2 TB</small></div></div><span class="badge green">Successful</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="testing" class="subview" aria-label="Failover testing">
+          <div class="detail-grid">
+            <div class="card detail-tile"><span class="stat-title">Last test result</span><div class="stat-value" style="color:#0baa91">Passed</div><p>All recovery checks succeeded</p></div>
+            <div class="card detail-tile"><span class="stat-title">Tests this month</span><div class="stat-value" id="testCount">8</div><p>Across critical workloads</p></div>
+            <div class="card detail-tile"><span class="stat-title">Next scheduled test</span><div class="stat-value" style="font-size:18px">Tomorrow</div><p>Production Database · 09:00 AM</p></div>
+          </div>
+          <div class="card view-card">
+            <div class="view-toolbar"><div><h2>Failover test history</h2><p>Validate that your recovery plans work when you need them.</p></div><button class="btn btn-primary" data-action="test"><svg class="icon"><use href="#i-activity"/></svg> Start new test</button></div>
+            <div class="info-list" id="testHistory">
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-shield"/></svg><div><strong>Production Database</strong><small>Today, 09:42 AM · Recovery time: 14 min</small></div></div><span class="badge green">Passed</span></div>
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-shield"/></svg><div><strong>Customer Portal</strong><small>Yesterday, 02:15 PM · Recovery time: 17 min</small></div></div><span class="badge green">Passed</span></div>
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-shield"/></svg><div><strong>Analytics Platform</strong><small>3 days ago · Recovery time: 22 min</small></div></div><span class="badge green">Passed</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="reports" class="subview" aria-label="Reports">
+          <div class="detail-grid">
+            <div class="card detail-tile"><span class="stat-title">Overall readiness</span><div class="stat-value">94%</div><p>Excellent protection health</p></div>
+            <div class="card detail-tile"><span class="stat-title">Successful tests</span><div class="stat-value">100%</div><p>For the current month</p></div>
+            <div class="card detail-tile"><span class="stat-title">Compliance checks</span><div class="stat-value">24 / 24</div><p>All checks passed</p></div>
+          </div>
+          <div class="card view-card">
+            <div class="view-toolbar"><div><h2>Available reports</h2><p>Download a snapshot of your recovery posture.</p></div></div>
+            <div class="info-list">
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-chart"/></svg><div><strong>Recovery readiness report</strong><small>Plan status, RPO targets, and protection overview</small></div></div><button class="btn btn-secondary" data-report="readiness"><svg class="icon"><use href="#i-download"/></svg> Export</button></div>
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-chart"/></svg><div><strong>Backup activity report</strong><small>Recent backup jobs and success metrics</small></div></div><button class="btn btn-secondary" data-report="backups"><svg class="icon"><use href="#i-download"/></svg> Export</button></div>
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-chart"/></svg><div><strong>Failover test report</strong><small>Test results and recovery performance</small></div></div><button class="btn btn-secondary" data-report="tests"><svg class="icon"><use href="#i-download"/></svg> Export</button></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="settings" class="subview" aria-label="Settings">
+          <div class="card view-card">
+            <div class="view-toolbar"><div><h2>Workspace settings</h2><p>Configure how CloudShield protects your organization.</p></div></div>
+            <div class="info-list">
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-cloud"/></svg><div><strong>Automatic daily backups</strong><small>Back up protected workloads every day</small></div></div><button class="switch on" role="switch" aria-checked="true" aria-label="Automatic daily backups"></button></div>
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-bell"/></svg><div><strong>Incident notifications</strong><small>Receive alerts about failed backups and critical events</small></div></div><button class="switch on" role="switch" aria-checked="true" aria-label="Incident notifications"></button></div>
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-lock"/></svg><div><strong>Encrypted backup storage</strong><small>Protect backup data with encryption at rest</small></div></div><button class="switch on" role="switch" aria-checked="true" aria-label="Encrypted backup storage"></button></div>
+              <div class="info-row"><div class="info-row-left"><svg class="icon"><use href="#i-rotate"/></svg><div><strong>Weekly failover reminders</strong><small>Get reminders to regularly test your recovery plans</small></div></div><button class="switch" role="switch" aria-checked="false" aria-label="Weekly failover reminders"></button></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head"><div><h2 id="modalTitle"></h2><p id="modalSubtitle"></p></div><button class="close-btn" id="closeModal" aria-label="Close dialog"><svg class="icon sm"><use href="#i-x"/></svg></button></div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"><svg class="icon"><use href="#i-check"/></svg><span id="toastText"></span></div>
+
+  <script>
+    const plans = [
+      { name: 'Production Database', region: 'US East (N. Virginia)', backup: '8 min ago', status: 'Protected', rpo: '15 min', rto: '30 min' },
+      { name: 'Customer Portal', region: 'US West (Oregon)', backup: '24 min ago', status: 'Protected', rpo: '30 min', rto: '1 hour' },
+      { name: 'Analytics Platform', region: 'EU (Frankfurt)', backup: '1 hour ago', status: 'Protected', rpo: '1 hour', rto: '2 hours' },
+      { name: 'Internal Services', region: 'US East (N. Virginia)', backup: '2 hours ago', status: 'Testing', rpo: '1 hour', rto: '2 hours' },
+      { name: 'File Storage', region: 'EU (Frankfurt)', backup: '3 hours ago', status: 'Protected', rpo: '4 hours', rto: '4 hours' },
+      { name: 'Staging Environment', region: 'US West (Oregon)', backup: '5 hours ago', status: 'Review', rpo: '4 hours', rto: '8 hours' }
+    ];
+    const activities = [
+      { title: 'Backup completed successfully', detail: 'Production Database · 8 min ago', type: 'green', icon: 'i-check' },
+      { title: 'Failover test passed', detail: 'Customer Portal · 2 hours ago', type: 'blue', icon: 'i-shield' },
+      { title: 'Recovery plan updated', detail: 'Analytics Platform · 5 hours ago', type: 'orange', icon: 'i-layers' },
+      { title: 'Scheduled backup completed', detail: 'Internal Services · Yesterday', type: 'green', icon: 'i-cloud' }
+    ];
+    let currentView = 'overview';
+    let totalPlans = 12;
+    let activePlans = 10;
+    let toastTimer;
+
+    const $ = id => document.getElementById(id);
+    const icon = name => `<svg class="icon"><use href="#${name}"/></svg>`;
+    const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+
+    function renderPlans(query = '') {
+      const filtered = plans.map((plan, index) => ({ plan, index })).filter(({ plan }) => plan.name.toLowerCase().includes(query.toLowerCase()) || plan.region.toLowerCase().includes(query.toLowerCase()));
+      const row = ({ plan, index }, full) => `<tr>
+        <td><div class="plan-cell"><span class="plan-icon">${icon('i-server')}</span><strong>${escapeHTML(plan.name)}</strong></div></td>
+        <td>${escapeHTML(plan.region)}</td><td>${escapeHTML(plan.backup)}</td>
+        ${full ? `<td>${escapeHTML(plan.rpo)} / ${escapeHTML(plan.rto)}</td>` : ''}
+        <td><span class="badge ${plan.status === 'Protected' ? 'green' : plan.status === 'Testing' ? 'blue' : 'amber'}">${plan.status === 'Protected' ? '<span class="status-dot"></span>' : ''}${plan.status}</span></td>
+        <td><button class="row-action" data-plan="${index}" aria-label="View ${escapeHTML(plan.name)} details">${icon('i-more')}</button></td>
+      </tr>`;
+      $('overviewPlanRows').innerHTML = filtered.slice(0, 4).map(item => row(item, false)).join('') || '<tr><td colspan="5" class="empty-state">No matching plans found.</td></tr>';
+      $('allPlanRows').innerHTML = filtered.map(item => row(item, true)).join('') || '<tr><td colspan="6" class="empty-state">No matching plans found.</td></tr>';
+    }
+
+    function renderActivities() {
+      $('activityList').innerHTML = activities.slice(0, 4).map(activity => `<div class="activity-entry"><span class="activity-icon ${activity.type}">${icon(activity.icon)}</span><div class="activity-text"><strong>${escapeHTML(activity.title)}</strong><span>${escapeHTML(activity.detail)}</span></div></div>`).join('');
+    }
+
+    function showView(view) {
+      currentView = view;
+      document.querySelectorAll('.nav-link').forEach(link => link.classList.toggle('active', link.dataset.view === view));
+      document.querySelectorAll('#overview, .subview').forEach(section => section.classList.toggle('active', section.id === view));
+      const names = { overview: 'Overview', plans: 'Recovery Plans', backups: 'Backups', testing: 'Failover Testing', reports: 'Reports', settings: 'Settings' };
+      const subtitles = {
+        plans: 'Keep every critical workload protected and ready to recover.',
+        backups: 'Track the health and history of your backup operations.',
+        testing: 'Verify your business can bounce back, before it needs to.',
+        reports: 'The insights you need to stay resilient and compliant.',
+        settings: 'Manage your workspace and protection preferences.'
+      };
+      $('breadcrumb').textContent = names[view];
+      $('pageTitle').textContent = view === 'overview' ? 'Good morning, Alex 👋' : names[view];
+      $('pageSubtitle').textContent = view === 'overview' ? "Here's what's happening with your disaster recovery today." : subtitles[view];
+      $('sidebar').classList.remove('open');
+      $('mobileOverlay').classList.remove('open');
+      $('notificationsPopover').classList.remove('open');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showToast(message) {
+      $('toastText').textContent = message;
+      $('toast').classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3500);
+    }
+
+    function openModal(title, subtitle, content) {
+      $('modalTitle').textContent = title;
+      $('modalSubtitle').textContent = subtitle;
+      $('modalBody').innerHTML = content;
+      $('modalBackdrop').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      const firstField = $('modalBody').querySelector('input, select');
+      if (firstField) setTimeout(() => firstField.focus(), 80);
+    }
+    function closeModal() {
+      $('modalBackdrop').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    const modalActions = (action, label) => `<div class="modal-actions"><button class="btn btn-secondary" data-action="close">Cancel</button><button class="btn btn-primary" data-action="${action}">${label}</button></div>`;
+
+    function createPlanModal() {
+      openModal('Create recovery plan', 'Set up protection for a critical workload.', `
+        <form id="createPlanForm">
+          <div class="field"><label for="planName">Plan name</label><input id="planName" name="name" placeholder="e.g. Billing Service" maxlength="60" required></div>
+          <div class="field"><label for="planRegion">Backup region</label><select id="planRegion" name="region"><option>US East (N. Virginia)</option><option>US West (Oregon)</option><option>EU (Frankfurt)</option><option>Asia Pacific (Singapore)</option></select></div>
+          <div class="form-two"><div class="field"><label for="planRpo">Recovery point (RPO)</label><select id="planRpo" name="rpo"><option>15 min</option><option>30 min</option><option>1 hour</option><option>4 hours</option></select></div><div class="field"><label for="planRto">Recovery time (RTO)</label><select id="planRto" name="rto"><option>30 min</option><option>1 hour</option><option>2 hours</option><option>4 hours</option></select></div></div>
+          <div class="modal-actions"><button type="button" class="btn btn-secondary" data-action="close">Cancel</button><button type="submit" class="btn btn-primary">Create plan</button></div>
+        </form>`);
+    }
+
+    function testModal() {
+      openModal('Run failover test', 'Safely verify a recovery plan without affecting production.', `
+        <div class="field"><label for="testPlan">Choose recovery plan</label><select id="testPlan">${plans.map((p, i) => `<option value="${i}">${escapeHTML(p.name)}</option>`).join('')}</select></div>
+        <div class="readiness-note">${icon('i-shield')} This is a non-disruptive simulation. Production stays online.</div>
+        ${modalActions('confirm-test', 'Start test')}`);
+    }
+
+    function backupModal() {
+      openModal('Run an on-demand backup', 'Create a new recovery point for a protected workload.', `
+        <div class="field"><label for="backupPlan">Choose recovery plan</label><select id="backupPlan">${plans.map((p, i) => `<option value="${i}">${escapeHTML(p.name)}</option>`).join('')}</select></div>
+        <div class="readiness-note">${icon('i-lock')} Your backup will be encrypted and replicated securely.</div>
+        ${modalActions('confirm-backup', 'Run backup')}`);
+    }
+
+    function planDetail(index) {
+      const plan = plans[index];
+      if (!plan) return;
+      openModal(plan.name, 'Recovery plan details', `
+        <div class="detail-line"><span>Status</span><strong>${escapeHTML(plan.status)}</strong></div>
+        <div class="detail-line"><span>Backup region</span><strong>${escapeHTML(plan.region)}</strong></div>
+        <div class="detail-line"><span>Last backup</span><strong>${escapeHTML(plan.backup)}</strong></div>
+        <div class="detail-line"><span>Recovery point objective</span><strong>${escapeHTML(plan.rpo)}</strong></div>
+        <div class="detail-line"><span>Recovery time objective</span><strong>${escapeHTML(plan.rto)}</strong></div>
+        <div class="modal-actions"><button class="btn btn-secondary" data-action="close">Close</button><button class="btn btn-primary" data-action="test-plan" data-index="${index}">Test this plan</button></div>`);
+    }
+
+    function addActivity(title, detail, type, activityIcon) {
+      activities.unshift({ title, detail, type, icon: activityIcon });
+      renderActivities();
+    }
+
+    function downloadReport(type) {
+      const date = new Date().toISOString().slice(0, 10);
+      const reports = {
+        readiness: `CloudShield Recovery Readiness Report\nGenerated: ${date}\n\nOverall readiness: 94%\nProtected workloads: 48\nRecovery plans: ${totalPlans}\nActive plans: ${activePlans}\n\nPlan,Region,Status,RPO,RTO\n${plans.map(p => `"${p.name}","${p.region}",${p.status},${p.rpo},${p.rto}`).join('\n')}`,
+        backups: `CloudShield Backup Activity Report\nGenerated: ${date}\n\nBackup success rate: 99.8%\nProtected data: 12.4 TB\nLast successful backup: ${$('lastBackupDisplay').textContent}\n\nPlan,Last Backup,Status\n${plans.map(p => `"${p.name}",${p.backup},${p.status}`).join('\n')}`,
+        tests: `CloudShield Failover Test Report\nGenerated: ${date}\n\nTests this month: ${$('testCount').textContent}\nLast test result: Passed\nAverage recovery time: 18 minutes\n\nRecent tests:\nProduction Database: Passed, 14 min\nCustomer Portal: Passed, 17 min\nAnalytics Platform: Passed, 22 min`
+      };
+      const blob = new Blob([reports[type]], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `cloudshield-${type}-report-${date}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast('Report downloaded successfully.');
+    }
+
+    const chartSets = {
+      '7': { a: [78,83,80,88,85,91,89,94,90,96,92,97,94], b: [68,72,70,76,74,81,78,82,80,87,84,89,86], labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] },
+      '30': { a: [76,79,77,83,80,87,85,88,86,91,89,94,96], b: [65,68,72,69,75,72,78,77,80,82,79,85,88], labels: ['Apr 1','Apr 5','Apr 10','Apr 15','Apr 20','Apr 25','Apr 30'] },
+      '90': { a: [73,77,75,80,78,83,82,87,85,89,90,93,96], b: [62,66,64,70,72,68,75,77,76,82,80,85,88], labels: ['Feb 1','Feb 15','Mar 1','Mar 15','Apr 1','Apr 15','Apr 30'] }
+    };
+    function drawChart(period) {
+      const data = chartSets[period];
+      const points = values => values.map((value, i) => `${i * 50},${150 - value * 1.5}`).join(' ');
+      const path = values => 'M' + points(values).replaceAll(' ', ' L');
+      $('primaryPath').setAttribute('d', path(data.a));
+      $('secondaryPath').setAttribute('d', path(data.b));
+      $('areaPath').setAttribute('d', `${path(data.a)} L600,150 L0,150 Z`);
+      $('chartLabels').innerHTML = data.labels.map(label => `<span>${label}</span>`).join('');
+    }
+
+    document.addEventListener('click', event => {
+      const viewButton = event.target.closest('[data-view]');
+      if (viewButton) { event.preventDefault(); showView(viewButton.dataset.view); return; }
+      const planButton = event.target.closest('[data-plan]');
+      if (planButton) { planDetail(Number(planButton.dataset.plan)); return; }
+      const reportButton = event.target.closest('[data-report]');
+      if (reportButton) { downloadReport(reportButton.dataset.report); return; }
+      const actionButton = event.target.closest('[data-action]');
+      if (!actionButton) return;
+      switch (actionButton.dataset.action) {
+        case 'create': createPlanModal(); break;
+        case 'backup': backupModal(); break;
+        case 'test': testModal(); break;
+        case 'close': closeModal(); break;
+        case 'test-plan': closeModal(); testModal(); $('testPlan').value = actionButton.dataset.index; break;
+        case 'confirm-backup': {
+          const plan = plans[Number($('backupPlan').value)];
+          plan.backup = 'Just now';
+          $('lastBackupDisplay').textContent = 'Just now';
+          $('backupJobs').insertAdjacentHTML('afterbegin', `<div class="info-row"><div class="info-row-left">${icon('i-cloud')}<div><strong>${escapeHTML(plan.name)}</strong><small>Completed just now · On-demand backup</small></div></div><span class="badge green">Successful</span></div>`);
+          addActivity('On-demand backup completed', `${plan.name} · Just now`, 'green', 'i-check');
+          renderPlans($('globalSearch').value);
+          closeModal();
+          showToast(`Backup completed for ${plan.name}.`);
+          break;
+        }
+        case 'confirm-test': {
+          const plan = plans[Number($('testPlan').value)];
+          $('testCount').textContent = Number($('testCount').textContent) + 1;
+          $('testHistory').insertAdjacentHTML('afterbegin', `<div class="info-row"><div class="info-row-left">${icon('i-shield')}<div><strong>${escapeHTML(plan.name)}</strong><small>Just now · Recovery checks succeeded</small></div></div><span class="badge green">Passed</span></div>`);
+          addActivity('Failover test passed', `${plan.name} · Just now`, 'blue', 'i-shield');
+          closeModal();
+          showToast(`Failover test passed for ${plan.name}.`);
+          break;
+        }
+      }
+    });
+
+    document.addEventListener('submit', event => {
+      if (event.target.id !== 'createPlanForm') return;
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const name = String(form.get('name')).trim();
+      if (!name) return;
+      plans.unshift({ name, region: form.get('region'), backup: 'Pending', status: 'Protected', rpo: form.get('rpo'), rto: form.get('rto') });
+      totalPlans++;
+      activePlans++;
+      $('planCount').textContent = totalPlans;
+      $('navPlanCount').textContent = totalPlans;
+      $('activePlanCount').textContent = activePlans;
+      $('globalSearch').value = '';
+      renderPlans();
+      addActivity('New recovery plan created', `${name} · Just now`, 'green', 'i-layers');
+      closeModal();
+      showView('plans');
+      showToast(`${name} is now protected.`);
+    });
+
+    $('newPlanButton').addEventListener('click', createPlanModal);
+    $('runBackupButton').addEventListener('click', backupModal);
+    $('bannerTestButton').addEventListener('click', testModal);
+    $('closeModal').addEventListener('click', closeModal);
+    $('modalBackdrop').addEventListener('click', event => { if (event.target === $('modalBackdrop')) closeModal(); });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeModal(); $('notificationsPopover').classList.remove('open'); } });
+    $('chartPeriod').addEventListener('change', event => drawChart(event.target.value));
+    $('globalSearch').addEventListener('input', event => {
+      renderPlans(event.target.value);
+      if (event.target.value.trim()) showView('plans');
+    });
+    $('menuButton').addEventListener('click', () => { $('sidebar').classList.add('open'); $('mobileOverlay').classList.add('open'); });
+    $('mobileOverlay').addEventListener('click', () => { $('sidebar').classList.remove('open'); $('mobileOverlay').classList.remove('open'); });
+    $('notificationsButton').addEventListener('click', () => {
+      const open = $('notificationsPopover').classList.toggle('open');
+      $('notificationsButton').setAttribute('aria-expanded', open);
+    });
+    $('helpButton').addEventListener('click', () => showToast('Help center: contact support@cloudshield.example for assistance.'));
+    document.querySelectorAll('.switch').forEach(button => button.addEventListener('click', () => {
+      button.classList.toggle('on');
+      const enabled = button.classList.contains('on');
+      button.setAttribute('aria-checked', String(enabled));
+      showToast(`${button.getAttribute('aria-label')} ${enabled ? 'enabled' : 'disabled'}.`);
+    }));
+
+    renderPlans();
+    renderActivities();
+    drawChart('7');
+  </script>
+</body>
+</html>
